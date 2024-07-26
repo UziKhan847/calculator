@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:math_expressions/math_expressions.dart';
-import 'dart:math';
+import 'calculator_button.dart';
 
 class CalcPage extends StatefulWidget {
   const CalcPage({super.key});
@@ -15,17 +15,7 @@ class _CalcPageState extends State<CalcPage> {
   String inputText = '';
   String outputText = '';
   final digit = RegExp(r'\d');
-  final operations = RegExp(r'[+|×|÷|%]');
-  List<int> indeces = [0, 0, 0, 0];
-  int largestIndex = 0;
-
-  //Long Press Back
-  void backBtnLong() {
-    setState(() {
-      inputText = '';
-      outputText = '';
-    });
-  }
+  final operators = RegExp(r'[+×÷%]');
 
   //Calculate input into a number when = is pressed
   String equals(String input) {
@@ -80,9 +70,7 @@ class _CalcPageState extends State<CalcPage> {
         continue;
       }
 
-      String lastB = openB.last;
-
-      switch (lastB) {
+      switch (openB.last) {
         case '(':
           if (char == ')') {
             openB.removeLast();
@@ -92,7 +80,7 @@ class _CalcPageState extends State<CalcPage> {
       }
     }
 
-    return (openB.isEmpty);
+    return openB.isEmpty;
   }
 
   //Bracket Button
@@ -122,7 +110,7 @@ class _CalcPageState extends State<CalcPage> {
       } else if (input.endsWith('(')) {
         return '(';
       } else if (closeB < openB &&
-          !operations.hasMatch(input[input.length - 1])) {
+          !operators.hasMatch(input[input.length - 1])) {
         return ')';
       } else {
         return '(';
@@ -134,9 +122,10 @@ class _CalcPageState extends State<CalcPage> {
 
   //Decimal Fix
   String decimal(String input) {
-    largestIndex = findLargestIndex(input);
+    int lastIndex = input.lastIndexOf(RegExp('[+−×÷%()]'));
 
-    if (input.isNotEmpty && input.contains('.', largestIndex)) {
+    if (input.isNotEmpty &&
+        input.contains('.', lastIndex > 0 ? lastIndex : 0)) {
       return '';
     } else if (input.isEmpty || !digit.hasMatch(input[input.length - 1])) {
       return "0.";
@@ -145,62 +134,23 @@ class _CalcPageState extends State<CalcPage> {
     }
   }
 
-  //Largest Index
-  int findLargestIndex(String input) {
-    indeces[0] = input.lastIndexOf(RegExp('[+]'));
-    indeces[1] = input.lastIndexOf(RegExp('[-]'));
-    indeces[2] = input.lastIndexOf(RegExp('[×]'));
-    indeces[3] = input.lastIndexOf(RegExp('[÷]'));
-    return indeces.reduce(max) == -1 ? 0 : indeces.reduce(max);
+  void operatorsButtons(String calcBtn) {
+    setState(() {
+      if (inputText.isEmpty ||
+          !inputText.endsWith(')') &&
+              !digit.hasMatch(inputText[inputText.length - 1])) {
+      } else {
+        inputText += calcBtn;
+      }
+    });
   }
 
-  void calculate(String calcBtn) {
+  void numberButtons(String calcBtn) {
     setState(() {
-      switch (calcBtn) {
-        case 'C':
-          inputText = '';
-          outputText = '';
-        case '⌫':
-          if (inputText.isNotEmpty) {
-            inputText = inputText.substring(0, inputText.length - 1);
-            outputText = '';
-          }
-        case '.':
-          if (inputText.endsWith(')')) {
-            inputText += '×${decimal(inputText)}';
-          } else {
-            inputText += decimal(inputText);
-          }
-        case '=':
-          if (inputText.isNotEmpty) outputText = equals(inputText);
-        case '()':
-          if (inputText.endsWith('.')) {
-          } else {
-            inputText += bracketBtn(inputText);
-          }
-        case '−':
-          if (inputText.endsWith('−')) {
-            inputText += '($calcBtn';
-          } else if (inputText.endsWith('.')) {
-          } else {
-            inputText += calcBtn;
-          }
-        case '+':
-        case '×':
-        case '÷':
-        case '%':
-          if (inputText.isEmpty ||
-              !inputText.endsWith(')') &&
-                  !digit.hasMatch(inputText[inputText.length - 1])) {
-          } else {
-            inputText += calcBtn;
-          }
-        default:
-          if (inputText.endsWith(')')) {
-            inputText += '×$calcBtn';
-          } else {
-            inputText += calcBtn;
-          }
+      if (inputText.endsWith(')')) {
+        inputText += '×$calcBtn';
+      } else {
+        inputText += calcBtn;
       }
     });
   }
@@ -208,21 +158,29 @@ class _CalcPageState extends State<CalcPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 47, 47, 47),
       body: Column(
         children: [
-          //input
           Container(
-            alignment: Alignment.centerRight,
-            padding: EdgeInsets.only(left: 15, right: 15, top: 15),
-            height: 200,
+            height: 40,
             color: Colors.black,
-            child: SelectableText(
-              inputText,
-              style: TextStyle(
-                fontSize: 40,
-                color: Color.fromARGB(255, 255, 221, 190),
+          ),
+
+          //input
+          Expanded(
+            child: Container(
+              alignment: Alignment.centerRight,
+              //padding: EdgeInsets.only(left: 15, right: 15),
+              //height: 200,
+              color: Color.fromARGB(255, 0, 0, 0),
+              child: SelectableText(
+                inputText,
+                style: TextStyle(
+                  fontSize: 40,
+                  color: Color.fromARGB(255, 255, 221, 190),
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
 
@@ -230,7 +188,7 @@ class _CalcPageState extends State<CalcPage> {
           Container(
             alignment: Alignment.centerRight,
             padding: EdgeInsets.only(left: 15, right: 15),
-            height: 100,
+            height: 90,
             color: const Color.fromARGB(255, 27, 27, 27),
             child: SelectableText(
               outputText,
@@ -244,7 +202,7 @@ class _CalcPageState extends State<CalcPage> {
 
           //delete
           Container(
-            height: 70,
+            height: 60,
             padding: EdgeInsets.only(right: 15),
             color: Color.fromARGB(255, 35, 35, 35),
             alignment: Alignment.centerRight,
@@ -253,9 +211,20 @@ class _CalcPageState extends State<CalcPage> {
                 color: Color.fromARGB(255, 35, 35, 35),
                 child: InkWell(
                   onTap: () {
-                    calculate('⌫');
+                    setState(() {
+                      if (inputText.isNotEmpty) {
+                        inputText =
+                            inputText.substring(0, inputText.length - 1);
+                        outputText = '';
+                      }
+                    });
                   },
-                  onLongPress: backBtnLong,
+                  onLongPress: () {
+                    setState(() {
+                      inputText = '';
+                      outputText = '';
+                    });
+                  },
                   splashColor: const Color.fromARGB(36, 244, 67, 54),
                   child: SizedBox(
                     width: 50,
@@ -271,645 +240,340 @@ class _CalcPageState extends State<CalcPage> {
             ),
           ),
 
-          //delete
-          //  Container(
-          //     height: 70,
-          //     padding: EdgeInsets.only(right: 15),
-          //     color: Color.fromARGB(255, 35, 35, 35),
-          //     alignment: Alignment.centerRight,
-          //    child: IconButton(
-          //      icon: Icon(Icons.backspace_outlined),
-          //      onPressed: () {
-          //        calculate('⌫');
-          //       },
-          //      color: Color.fromARGB(255, 250, 93, 21),
-          //      iconSize: 30,
-          //      ),
-          //    ),
-
           //calculator buttons
-          Expanded(
-              child: Container(
-            padding: EdgeInsets.only(top: 25, bottom: 15),
-            color: Color.fromARGB(255, 47, 47, 47),
-            child: Row(
-              children: [
-                //Row 1
-                Expanded(
-                    child: Column(
-                  children: [
-                    //Column - C
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.red, // Splash color
-                              onTap: () {
-                                calculate('C');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "C",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: const Color.fromARGB(
-                                            255, 149, 15, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          Container(
+            height: 15,
+          ),
 
-                    //Column - 7
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('7');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "7",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          //Row 1
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              //C
+              CalculatorButton(
+                onTap: () {
+                  setState(() {
+                    inputText = '';
+                    outputText = '';
+                  });
+                },
+                text: 'C',
+                textColor: Color.fromARGB(255, 149, 15, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: const Color.fromARGB(186, 244, 67, 54),
+              ),
 
-                    //Column - 4
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('4');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "4",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //()
+              CalculatorButton(
+                onTap: () {
+                  setState(() {
+                    if (!inputText.endsWith('.')) {
+                      inputText += bracketBtn(inputText);
+                    }
+                  });
+                },
+                text: '()',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
 
-                    //Column - 1
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('1');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "1",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //%
+              CalculatorButton(
+                onTap: () {
+                  operatorsButtons('%');
+                },
+                text: '%',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
 
-                    //Column - ±
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color:
-                                Color.fromARGB(255, 26, 26, 26), // Button color
-                            child: InkWell(
-                              splashColor: Color.fromARGB(
-                                  255, 255, 255, 255), // Splash color
-                              onTap: () {},
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "اذْكُرُ اللَّهَ",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color.fromARGB(255, 26, 26, 26),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )),
+              //÷
+              CalculatorButton(
+                onTap: () {
+                  operatorsButtons('÷');
+                },
+                text: '÷',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
+            ],
+          ),
 
-                //Row 2
-                Expanded(
-                    child: Column(
-                  children: [
-                    //Column - ()
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('()');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "()",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          Container(
+            height: 10,
+          ),
 
-                    //Column - 8
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('8');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "8",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          //Row2
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              //7
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('7');
+                },
+                text: '7',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - 5
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('5');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "5",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //8
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('8');
+                },
+                text: '8',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - 2
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('2');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "2",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //9
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('9');
+                },
+                text: '9',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - 0
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('0');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "0",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )),
+              //×
+              CalculatorButton(
+                onTap: () {
+                  operatorsButtons('×');
+                },
+                text: '×',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
+            ],
+          ),
 
-                //Row 3
-                Expanded(
-                    child: Column(
-                  children: [
-                    //Column - %
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('%');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "%",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          Container(
+            height: 10,
+          ),
 
-                    //Column - 9
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('9');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "9",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          //Row 3
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              //4
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('4');
+                },
+                text: '4',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - 6
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('6');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "6",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //5
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('5');
+                },
+                text: '5',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - 3
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('3');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "3",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //6
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('6');
+                },
+                text: '6',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - .
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.grey, // Splash color
-                              onTap: () {
-                                calculate('.');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    ".",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(fontSize: 40),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )),
+              //−
+              CalculatorButton(
+                onTap: () {
+                  setState(() {
+                    if (inputText.endsWith('−')) {
+                      inputText += '(−';
+                    } else if (inputText.endsWith('.')) {
+                    } else {
+                      inputText += '−';
+                    }
+                  });
+                },
+                text: '−',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
+            ],
+          ),
 
-                //Row 4
-                Expanded(
-                    child: Column(
-                  children: [
-                    //Column - ÷
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('÷');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "÷",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          Container(
+            height: 10,
+          ),
 
-                    //Column - ×
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('×');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "×",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+          //Row4
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              //1
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('1');
+                },
+                text: '1',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - -
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('−');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "−",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //2
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('2');
+                },
+                text: '2',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - +
-                    Expanded(
-                      child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color: Colors.white, // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('+');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "+",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Color.fromARGB(255, 0, 128, 6)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+              //3
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('3');
+                },
+                text: '3',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
 
-                    //Column - =
-                    Expanded(
+              //+
+              CalculatorButton(
+                onTap: () {
+                  operatorsButtons('+');
+                },
+                text: '+',
+                textColor: Color.fromARGB(255, 0, 128, 6),
+                bold: FontWeight.w900,
+                color: Colors.white,
+                splashColor: Colors.lightGreen,
+              ),
+            ],
+          ),
+
+          Container(
+            height: 10,
+          ),
+
+          //Row5
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              //اذكر الله
+              ClipOval(
+                child: Material(
+                  color: Colors.black, // Button color
+                  child: InkWell(
+                    splashColor: Colors.white, // Splash color
+                    onTap: () {},
+                    child: SizedBox(
+                      width: 60,
+                      height: 60,
                       child: Center(
-                        child: ClipOval(
-                          child: Material(
-                            color:
-                                Color.fromARGB(255, 12, 74, 12), // Button color
-                            child: InkWell(
-                              splashColor: Colors.lightGreen, // Splash color
-                              onTap: () {
-                                calculate('=');
-                              },
-                              child: SizedBox(
-                                width: 65,
-                                height: 65,
-                                child: Center(
-                                  child: Text(
-                                    "=",
-                                    textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
-                                        color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                        child: Text(
+                          'اذْكُرُ اللَّهَ',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: Colors.black),
                         ),
                       ),
                     ),
-                  ],
-                )),
-              ],
-            ),
-          )),
+                  ),
+                ),
+              ),
+
+              //0
+              CalculatorButton(
+                onTap: () {
+                  numberButtons('0');
+                },
+                text: '0',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
+
+              //.
+              CalculatorButton(
+                onTap: () {
+                  setState(() {
+                    if (inputText.endsWith(')')) {
+                      inputText += '×${decimal(inputText)}';
+                    } else {
+                      inputText += decimal(inputText);
+                    }
+                  });
+                },
+                text: '.',
+                textColor: Colors.black,
+                bold: FontWeight.w400,
+                color: Colors.white,
+                splashColor: Colors.grey,
+              ),
+
+              //=
+              CalculatorButton(
+                onTap: () {
+                  setState(() {
+                    if (inputText.isNotEmpty) outputText = equals(inputText);
+                  });
+                },
+                text: '=',
+                textColor: Colors.white,
+                bold: FontWeight.w900,
+                color: Color.fromARGB(255, 12, 74, 12),
+                splashColor: Colors.lightGreen,
+              ),
+            ],
+          ),
+
+          Container(
+            height: 15,
+          ),
         ],
       ),
     );
